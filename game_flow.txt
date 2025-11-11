@@ -1,0 +1,45 @@
+General:-
+Host: Enters name and creates room. Room created. Copies room id.
+Other players: Enters name and pastes room id. Enters game.
+Host: Starts game.
+Late joiners: Cannot enter anymore, since game has already started.
+Mid-game quitters: For 1 werewolf games, If werewolf and any 1 other player is left, and the others quit the game (not killed), game ends, werewolf wins. If werewolf quits the game (not killed or voted out), villagers win.
+                   For 2 werewolf games, If two werewolves and any 1 other player is left, and the others quit the game (not killed), game ends, werewolf wins. If both werewolves quit the game (not killed or voted out), villagers win.
+
+
+Role-specific:-
+Werewolf: Night-time. Gets 30 seconds to choose whom to kill. Can discuss with other werewolf (for 2 werewolf games). Werewolves can chat with each other even during the discussion phase. Has to keep only 1 villager alive to win (others dead).
+Healer: Night-time. Werewolf attempts to kill someone in the first 30s. In the next 30s, the healer can see whom the werewolf has attempted to kill. Then healer chooses whether to save that killed person. If save, the player is not killed and can continue, else dead.
+        Healer might be killed. In that case, for the first time healer is killed, the healer can choose whether to save himself. If he doesn't save himself, he is killed. If he saves himself, he is alive, and can take part in further rounds. 
+        But if Healer is killed again by the werewolf, then no saving himself. He is killed instantly.
+        During voting phase, if healer is voted out, healer is killed. The 2 lives thing doesn't matter then.
+Villager: Normal villager. Vote out werewolves to win.        
+
+Snitch: Snitch is not just a normal villager. His special ability is unlocked after he is dead (killed/voted out). While other players can't chat after dead, the snitch can private text any one alive player just once, to give a clue about the werewolf during the discussion phase.
+Seer: Seer is not just a normal villager. He can see who the werewolves are throughout the game.
+
+Game players: Minimum 4, Maximum 8.
+4 players: 1 werewolf, 1 healer, 2 villagers.
+5 players: 1 werewolf, 1 seer, 1 healer, 2 villagers.
+6 players: 2 werewolves, 1 seer, 1 healer, 2 villagers.
+7 players: 2 werewolves, 1 snitch, 1 seer, 1 healer, 2 villagers.
+8 players: 2 werewolves, 1 snitch, 1 seer, 1 healer, 3 villagers.
+
+Voting Phase (Pre/Post/In):-
+
+To win, villagers must vote out all werewolves without being outnumbered.
+If 1 werewolf and 1 villager remain, werewolf wins. If 2 werewolves and 1 villager remain, werewolves win.
+
+Once dead, players can't participate in voting or discussion phase. The werewolves can't communicate with each other if one of them is dead. They can just view the game in spectate mode.
+Only snitch can private text one of the alive players. Can't text dead players.
+
+30 seconds at first for the werewolf to select whom to kill. next 30 seconds for healer to select whether to save the killed. next 180 seconds for alive players to discuss. next 30 seconds for the alive players to vote. If werewolf alive, game continues to next round.
+
+Everyone can see who voted for whom after each voting phase. This is for 10 seconds.
+So total time 4 mins 40 seconds in each round.
+
+
+Edge cases:-
+For a tie in voting, no player is voted out. Proceed to next round.
+If no player is chosen by werewolf to kill in the 30s, any random player is killed (except the werewolves/werewolf).
+If no player is chosen by healer to be saved in the 30s, Don't save is selected as the option, and the player killed dies.
