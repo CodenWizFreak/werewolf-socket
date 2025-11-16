@@ -36,7 +36,6 @@ export default function SnitchMessage({ player, players, hasUsedMessage, onMessa
     setSelectedPlayer(null)
   }
 
-  // Only show ALIVE players
   const alivePlayers = players.filter((p) => p.alive)
 
   return (

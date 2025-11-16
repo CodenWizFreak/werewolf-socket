@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
@@ -9,6 +10,31 @@ interface GameEndProps {
 
 export default function GameEnd({ winner }: GameEndProps) {
   const router = useRouter()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (winner) {
+      // Play victory music for villagers, loss music for werewolves
+      const audioFile = winner === "villagers" ? "/victory.mp3" : "/loss.mp3"
+      
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+      
+      audioRef.current = new Audio(audioFile)
+      audioRef.current.volume = 1.0
+      audioRef.current.play().catch(err => {
+        console.log("Audio playback failed:", err)
+      })
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [winner])
 
   return (
     <div className="bg-slate-800/50 p-8 rounded-lg border border-slate-700 text-center">

@@ -1,115 +1,112 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import type { Player, GameMessage } from "@/lib/game-types"
-// **REMOVED**: getSocket
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react";
+import type { Player, GameMessage } from "@/lib/game-types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface NightPhaseProps {
-  player: Player
-  players: Player[]
-  werewolfMessages?: GameMessage[]
-  phase?: string
-  
-  // --- NEW Props (from parent) ---
-  killLocked: { id: string; name: string } | null
-  werewolfTarget: { id: string; name: string } | null
-  healerPhaseActive: boolean
-  healerUsesLeft: number
-  onKill: (targetId: string) => void
-  onHeal: (targetId: string | null) => void // null = "Don't Save"
-  onWerewolfChat: (message: string) => void
+  player: Player;
+  players: Player[];
+  werewolfMessages?: GameMessage[];
+  phase?: string;
+
+  killLocked: { id: string; name: string } | null;
+  werewolfTarget: { id: string; name: string } | null;
+  healerPhaseActive: boolean;
+  healerUsesLeft: number;
+  onKill: (targetId: string) => void;
+  onHeal: (targetId: string | null) => void;
+  onWerewolfChat: (message: string) => void;
 }
 
-export default function NightPhase({ 
-  player, 
-  players, 
-  werewolfMessages = [], 
+export default function NightPhase({
+  player,
+  players,
+  werewolfMessages = [],
   phase = "night",
-  // NEW Props
   killLocked,
   werewolfTarget,
   healerPhaseActive,
   healerUsesLeft,
   onKill,
   onHeal,
-  onWerewolfChat
+  onWerewolfChat,
 }: NightPhaseProps) {
-  
-  // Local UI state is fine
-  const [selected, setSelected] = useState<string | null>(null)
-  const [werewolfChatMessage, setWerewolfChatMessage] = useState("")
-  const [killSubmitted, setKillSubmitted] = useState(false) 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  // **REMOVED**: All useState hooks for server state
-  // **REMOVED**: All useEffect hooks with socket listeners
+  const [selected, setSelected] = useState<string | null>(null);
+  const [werewolfChatMessage, setWerewolfChatMessage] = useState("");
+  const [killSubmitted, setKillSubmitted] = useState(false);
 
-  // This just scrolls the chat
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [werewolfMessages])
-  
-  // This resets the local 'killSubmitted' state when the prop changes
   useEffect(() => {
     if (killLocked) {
-      setKillSubmitted(false)
+      setKillSubmitted(false);
     }
-  }, [killLocked])
-  
-  // Reset local state when phase changes
+  }, [killLocked]);
+
   useEffect(() => {
     if (phase === "night" || phase === "discussion") {
-      setKillSubmitted(false)
-      setSelected(null)
+      setKillSubmitted(false);
+      setSelected(null);
     }
-  }, [phase])
+  }, [phase]);
 
   const handleSendWerewolfMessage = () => {
-    if (!werewolfChatMessage.trim() || player.role !== "werewolf" || !player.alive) return
-    onWerewolfChat(werewolfChatMessage) // Use prop
-    setWerewolfChatMessage("")
-  }
+    if (
+      !werewolfChatMessage.trim() ||
+      player.role !== "werewolf" ||
+      !player.alive
+    )
+      return;
+    onWerewolfChat(werewolfChatMessage);
+    setWerewolfChatMessage("");
+  };
 
-  const isDiscussionPhase = phase === "discussion"
-  const showWerewolfChat = player.role === "werewolf" && player.alive
-  const isHealer = player.role === "healer" && player.alive
+  const showWerewolfChat = player.role === "werewolf" && player.alive;
+  const isHealer = player.role === "healer" && player.alive;
+  const isNightPhase = phase === "night";
+  const isHealerPhase = phase === "healer";
 
-  if (!showWerewolfChat && !isHealer) {
+  // If it's night phase and player is not werewolf, or healer phase and player is not healer
+  if ((isNightPhase && !showWerewolfChat) || (isHealerPhase && !isHealer)) {
     return (
       <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 text-center">
-        <p className="text-gray-400">Waiting for night phase to complete...</p>
-        <p className="text-gray-500 text-sm mt-2">The werewolves and healer are making their choices...</p>
+        <p className="text-gray-400">
+          {isNightPhase ? "Waiting for night phase to complete..." : "Waiting for healer to make their decision..."}
+        </p>
+        <p className="text-gray-500 text-sm mt-2">
+          {isNightPhase ? "The werewolves are making their choice..." : "The healer is deciding whether to save someone..."}
+        </p>
       </div>
-    )
+    );
   }
 
   const handleAction = () => {
-    if (player.role === "werewolf") {
-      if (!selected || killLocked || killSubmitted) return
-      setKillSubmitted(true) 
-      onKill(selected) // Use prop
-      setSelected(null)
-    } else if (player.role === "healer") {
-      onHeal(selected) // Use prop (will be targetId or null)
-      setSelected(null)
+    if (player.role === "werewolf" && isNightPhase) {
+      if (!selected || killLocked || killSubmitted) return;
+      setKillSubmitted(true);
+      onKill(selected);
+      setSelected(null);
+    } else if (player.role === "healer" && isHealerPhase) {
+      onHeal(selected);
+      setSelected(null);
     }
-  }
+  };
 
-  const alivePlayers = players.filter((p) => p.alive)
+  const alivePlayers = players.filter((p) => p.alive);
+
+  // Check if the werewolf target is the healer themselves
+  const isSavingSelf = werewolfTarget?.id === player.id;
 
   return (
     <div className="space-y-4">
-      {showWerewolfChat && (
+      {showWerewolfChat && isNightPhase && (
         <div className="bg-red-900/20 rounded-lg border border-red-700/50 flex flex-col h-64 flex-shrink-0">
           <div className="p-3 border-b border-red-700/50 flex-shrink-0">
             <h3 className="font-bold text-red-400 flex items-center gap-2">
               🐺 Werewolf Chat (Private)
             </h3>
             <p className="text-xs text-red-300/70 mt-1">
-              {isDiscussionPhase 
-                ? "Continue coordinating during discussion - only alive werewolves can see this" 
-                : "Coordinate with your pack - only alive werewolves can see this"}
+              Coordinate with your pack - only alive werewolves can see this
             </p>
           </div>
 
@@ -121,11 +118,12 @@ export default function NightPhase({
             )}
             {werewolfMessages.map((msg, i) => (
               <div key={i} className="text-sm">
-                <span className="font-medium text-red-400">{msg.playerName}:</span>
+                <span className="font-medium text-red-400">
+                  {msg.playerName}:
+                </span>
                 <span className="text-gray-300 ml-2">{msg.message}</span>
               </div>
             ))}
-            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-3 border-t border-red-700/50 flex-shrink-0">
@@ -133,7 +131,9 @@ export default function NightPhase({
               <Input
                 value={werewolfChatMessage}
                 onChange={(e) => setWerewolfChatMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendWerewolfMessage()}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && handleSendWerewolfMessage()
+                }
                 placeholder="Message your pack..."
                 className="bg-slate-700 border-red-600/50 text-white placeholder:text-gray-500"
               />
@@ -149,10 +149,12 @@ export default function NightPhase({
         </div>
       )}
 
-      {!isDiscussionPhase && showWerewolfChat && (
+      {isNightPhase && showWerewolfChat && (
         <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-          <h3 className="font-bold text-red-500 mb-4">🐺 Choose someone to kill</h3>
-          
+          <h3 className="font-bold text-red-500 mb-4">
+            🐺 Choose someone to kill
+          </h3>
+
           {killLocked ? (
             <div className="bg-green-900/30 border border-green-500 rounded-lg p-3">
               <p className="text-green-400 font-bold">
@@ -194,14 +196,19 @@ export default function NightPhase({
         </div>
       )}
 
-
-      {!isDiscussionPhase && isHealer && (
+      {isHealerPhase && isHealer && (
         <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-          <h3 className="font-bold text-green-500 mb-4">💚 Healer - Save Someone</h3>
-          <p className="text-sm text-yellow-400 mb-2">
-            Heals remaining: {healerUsesLeft}/2
-          </p>
+          <h3 className="font-bold text-green-500 mb-4">
+            💚 Healer Phase - Save Someone
+          </h3>
           
+          {/* Only show heals remaining if healer is saving themselves */}
+          {isSavingSelf && (
+            <p className="text-sm text-yellow-400 mb-2">
+              Self-heals remaining: {healerUsesLeft}/1
+            </p>
+          )}
+
           {werewolfTarget ? (
             <>
               <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 mb-4">
@@ -210,44 +217,60 @@ export default function NightPhase({
                 </p>
                 <p className="text-gray-300 text-sm">
                   Do you want to save them?
-                  {werewolfTarget.id === player.id && " (This is YOU!)"}
+                  {isSavingSelf && " (This is YOU!)"}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => {
-                    setSelected(werewolfTarget.id) // Set local state
-                    onHeal(werewolfTarget.id)      // Call prop
-                  }}
-                  disabled={healerUsesLeft === 0 && werewolfTarget.id === player.id}
-                  className="bg-green-600 hover:bg-green-700 h-12 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  ✅ Save {werewolfTarget.name}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setSelected(null) // Set local state
-                    onHeal(null)      // Call prop
-                  }}
-                  className="bg-gray-600 hover:bg-gray-700 h-12 text-lg font-bold"
-                >
-                  ❌ Let them die
-                </Button>
-              </div>
-
-              {healerUsesLeft === 0 && werewolfTarget.id === player.id && (
-                <p className="text-red-400 text-sm mt-2 text-center font-bold">
-                  ⚠️ You have no heals left! You cannot save yourself and will die.
-                </p>
+              {/* Only check heals if saving themselves */}
+              {isSavingSelf && healerUsesLeft === 0 ? (
+                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                  <p className="text-red-400 font-bold text-center mb-2">
+                    ❌ No Self-Heals Remaining
+                  </p>
+                  <p className="text-gray-300 text-sm text-center">
+                    You have already used your self-heal. You will die.
+                  </p>
+                  <Button
+                    onClick={() => onHeal(null)}
+                    className="w-full mt-3 bg-gray-600 hover:bg-gray-700"
+                  >
+                    Continue
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      onClick={() => {
+                        setSelected(werewolfTarget.id);
+                        onHeal(werewolfTarget.id);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 h-12 text-lg font-bold"
+                    >
+                      ✅ Save {werewolfTarget.name}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelected(null);
+                        onHeal(null);
+                      }}
+                      className="bg-gray-600 hover:bg-gray-700 h-12 text-lg font-bold"
+                    >
+                      ❌ Let them die
+                    </Button>
+                  </div>
+                  {!isSavingSelf && (
+                    <p className="text-gray-400 text-xs text-center mt-2">
+                      You have unlimited heals for other players
+                    </p>
+                  )}
+                </>
               )}
             </>
           ) : (
             <div className="bg-slate-700/50 rounded-lg p-4 text-center">
               <p className="text-gray-400">
-                {healerPhaseActive 
-                  ? "Waiting for werewolf kill information..." 
-                  : "Waiting for werewolf to choose their target..."}
+                Waiting for information about the werewolf attack...
               </p>
               <div className="mt-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto" />
@@ -257,5 +280,5 @@ export default function NightPhase({
         </div>
       )}
     </div>
-  )
+  );
 }

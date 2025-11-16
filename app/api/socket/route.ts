@@ -76,8 +76,8 @@ function startPhaseTimer(io: Server, roomId: string) {
     room.werewolfKilledId = undefined // Reset kill target
     console.log("[NIGHT PHASE START] Werewolves have 30 seconds to kill")
   } else if (room.phase === "discussion") {
-    room.phaseDuration = 180000
-    console.log("[DISCUSSION PHASE START] 180 seconds for discussion")
+    room.phaseDuration = 120000
+    console.log("[DISCUSSION PHASE START] 120 seconds for discussion")
   } else if (room.phase === "voting") {
     room.phaseDuration = 30000
     console.log("[VOTING PHASE START] 30 seconds to vote")
@@ -263,34 +263,39 @@ function showVoteResults(io: Server, roomId: string) {
   const room = rooms[roomId]
   if (!room) return
 
+  console.log("[SHOW VOTE RESULTS] Calculating eliminated player...")
+  console.log("[SHOW VOTE RESULTS] Current votes:", room.votes)
+  
   const eliminatedId = tallyVotes(room)
+  
+  console.log("[SHOW VOTE RESULTS] Eliminated ID from tallyVotes:", eliminatedId)
   
   const voteResults: Record<string, string[]> = {}
   Object.entries(room.votes).forEach(([voterSocketId, votedId]) => {
     if (!voteResults[votedId]) {
       voteResults[votedId] = []
     }
-    const voter = Object.values(room.players).find(p => p.socketId === voterSocketId)
+    const voter = Object.values(room.players).find((p) => p.socketId === voterSocketId)
     if (voter) {
       voteResults[votedId].push(voter.name)
     }
   })
 
   room.voteResults = voteResults
-
-  // Change phase to "results" 
   room.phase = "results"
+
   io.to(roomId).emit("phase-change", {
     phase: room.phase,
     round: room.round,
   })
 
-  // Emit the vote results
   io.to(roomId).emit("vote-results", { 
     voteResults,
     eliminatedId,
     eliminatedName: eliminatedId ? room.players[eliminatedId]?.name : null
   })
+
+  console.log("[SHOW VOTE RESULTS] Emitted vote results with eliminatedId:", eliminatedId)
 
   // Start 10-second results timer
   room.phaseStartTime = Date.now()
@@ -314,7 +319,9 @@ function showVoteResults(io: Server, roomId: string) {
       clearInterval(room.timerInterval!)
       room.timerInterval = undefined
       
-      // Apply elimination - INSTANT DEATH for voted out players (even healer with lives)
+      console.log("[RESULTS TIMER END] Applying elimination with eliminatedId:", eliminatedId)
+      
+      // Apply elimination - use the eliminatedId we calculated at the start
       if (eliminatedId && room.players[eliminatedId]) {
         room.players[eliminatedId].alive = false
         io.to(roomId).emit("player-eliminated", { 
@@ -322,6 +329,10 @@ function showVoteResults(io: Server, roomId: string) {
           playerName: room.players[eliminatedId].name 
         })
         console.log(`[VOTE ELIMINATION] ${room.players[eliminatedId].name} was eliminated by vote`)
+      } else if (eliminatedId === null) {
+        console.log(`[VOTE DRAW] No one eliminated - votes were tied`)
+      } else {
+        console.log(`[VOTE ERROR] eliminatedId is ${eliminatedId} but player not found`)
       }
       
       room.votes = {}
@@ -506,7 +517,6 @@ export function initSocket(server: any) {
         return
       }
 
-      // **FIX 1: Only allow ONE kill per night from ANY werewolf**
       if (room.werewolfHasKilled) {
         console.log(`[WEREWOLF KILL BLOCKED] A werewolf has already killed this night`)
         if (room.werewolfKilledId) {
@@ -518,18 +528,15 @@ export function initSocket(server: any) {
         return
       }
 
-      // Only allow kill if target is alive
       if (!room.players[targetId].alive) {
         console.log(`[WEREWOLF KILL BLOCKED] Target is already dead`)
         return
       }
 
-      // Lock the kill
       room.werewolfKilledId = targetId
       room.werewolfHasKilled = true
       console.log(`[WEREWOLF KILL LOCKED] ${room.players[senderId].name} killed ${room.players[targetId].name}`)
       
-      // **FIX 1: Notify ALL werewolves that kill has been made and is LOCKED**
       Object.values(room.players).forEach((player) => {
         if (player.role === "werewolf" && player.alive && io) {
           io.to(player.socketId).emit("kill-locked", { 
@@ -557,7 +564,6 @@ export function initSocket(server: any) {
       
       console.log(`[HEALER HEAL] ${room.players[healerId].name} healing: ${room.players[targetId]?.name}`)
       
-      // Cancel the kill if healer saved the target
       if (targetId === room.werewolfKilledId) {
         room.werewolfKilledId = undefined
         console.log(`[HEAL SUCCESS] Save successful!`)
@@ -567,7 +573,6 @@ export function initSocket(server: any) {
         })
       }
       
-      // **FIX 3: If healer saved themselves, decrease their lives**
       if (targetId === healerId) {
         room.healerUsesLeft[healerId]--
         console.log(`[HEALER SELF-SAVE] Healer used a life. Remaining: ${room.healerUsesLeft[healerId]}`)
@@ -577,7 +582,6 @@ export function initSocket(server: any) {
         usesLeft: room.healerUsesLeft[healerId] 
       })
       
-      // Advance to discussion phase after heal decision
       applyNightKillAndAdvance(io, roomId)
     })
 
@@ -691,6 +695,8 @@ export function initSocket(server: any) {
         
         if (voterId && room.players[voterId].alive) {
           room.votes[socket.id] = votedId
+          console.log(`[VOTE] ${room.players[voterId].name} voted for ${room.players[votedId].name}`)
+          console.log(`[VOTE] Current votes:`, room.votes)
           io.to(roomId).emit("votes-update", {
             voteCount: Object.keys(room.votes).length,
           })

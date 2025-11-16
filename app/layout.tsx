@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SocketProvider } from "@/components/socket-provider";
-import  MusicButton from "@/components/music-button"; // <-- see step 2
+import MusicButton from "@/components/music-button";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"] });
@@ -14,14 +14,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Werewolf Game",
   description: "Multiplayer Werewolf Game with Real-time Chat and Role-based Gameplay",
-  generator: "v0.app",
   icons: {
-    icon: [
-      { url: "/icon-light-32x32.png", media: "(prefers-color-scheme: light)" },
-      { url: "/icon-dark-32x32.png", media: "(prefers-color-scheme: dark)" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
@@ -29,10 +24,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body
-        className={`${geist.className} ${geistMono.className} ${inter.className} font-sans antialiased`}
+        className={`
+          ${geist.className} 
+          ${geistMono.className} 
+          ${inter.className} 
+          font-sans antialiased
+          relative min-h-screen
+          bg-[url('/wallpaper.jpg')]
+          bg-cover bg-center bg-no-repeat bg-fixed
+        `}
       >
+
+        {/* Main app content */}
         <SocketProvider>{children}</SocketProvider>
-        <MusicButton /> {/* client component */}
+
+        <MusicButton />
         <Analytics />
       </body>
     </html>

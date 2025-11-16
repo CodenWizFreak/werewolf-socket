@@ -18,7 +18,6 @@ export default function VotingPhase({ player, players }: VotingPhaseProps) {
     setVoted(targetId)
   }
 
-  // Dead players can only spectate
   if (!player.alive) {
     return (
       <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 text-center">

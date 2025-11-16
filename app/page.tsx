@@ -90,16 +90,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
-      <div
-        className="absolute inset-0 -z-20"
-        style={{
-          backgroundImage:
-            "url(https://hebbkx1anhila5yf.public.blob.vercel-storage.com/HD-wallpaper-dark-fantasy-werewolf-vampire-woman-dark-qAMJChq76iF8FkIgbJ7txFSejoaF1q.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
-        }}
-      />
       <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-slate-900/75 to-red-950/60 -z-10" />
 
       <div className="fixed top-6 left-6 z-50">

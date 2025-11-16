@@ -16,9 +16,9 @@ const ROLE_COLORS: Record<string, string> = {
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   werewolf: "Kill someone at night",
-  healer: "Heal someone at night (2 uses)",
+  healer: "Save anyone from werewolf attacks. Can self-heal once per game",
   seer: "See who the werewolves are",
-  snitch: "Send one private message if dead",
+  snitch: "Chat normally when alive. Send one private message after death",
   villager: "Find and vote out the werewolves",
 }
 
