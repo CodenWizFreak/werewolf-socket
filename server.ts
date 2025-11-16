@@ -6,8 +6,8 @@ import type { GameRoom } from "./lib/game-types";
 import { assignRoles, checkWinCondition, tallyVotes } from "./lib/game-logic";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+const hostname = "0.0.0.0";
+const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -817,8 +817,8 @@ app.prepare().then(() => {
     });
   });
 
-  server.listen(port, (err?: any) => {
-    if (err) throw err;
-    console.log(`> Ready on http://${hostname}:${port}`);
-  });
+ server.listen(port, hostname, (err?: any) => {
+  if (err) throw err;
+  console.log(`> Ready on http://${hostname}:${port}`);
+});
 });

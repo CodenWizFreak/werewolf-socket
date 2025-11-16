@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build && tsc server.ts --outDir dist --esModuleInterop --resolveJsonModule --skipLibCheck",
     "dev": "ts-node --project tsconfig.server.json server.ts",
     "lint": "next lint",
-    "start": "NODE_ENV=production ts-node --project tsconfig.server.json server.ts"
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
