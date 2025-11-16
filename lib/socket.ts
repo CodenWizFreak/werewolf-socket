@@ -1,35 +1,29 @@
-import io from "socket.io-client"
+import { io, Socket } from "socket.io-client";
 
-let socket: ReturnType<typeof io> | null = null
+let socket: Socket;
 
-export function getSocket() {
+export function getSocket(): Socket {
   if (!socket) {
-    socket = io('http://localhost:3000', {  // Explicitly set URL
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const url = isDevelopment 
+      ? 'http://localhost:3000' 
+      : (typeof window !== 'undefined' ? window.location.origin : '');
+    
+    console.log('[v0] Connecting to socket server:', url);
+    
+    socket = io(url, {
       transports: ["websocket", "polling"],
-    })
+      autoConnect: false,
+    });
 
     socket.on("connect", () => {
-      console.log("[v0] Socket connected successfully, id:", socket?.id)
-    })
-
-    socket.on("disconnect", () => {
-      console.log("[v0] Socket disconnected")
-    })
+      console.log("[v0] Socket connected successfully, id:", socket.id);
+    });
 
     socket.on("connect_error", (error) => {
-      console.error("[v0] Socket connection error:", error)
-    })
+      console.error("[v0] Socket connection error:", error);
+    });
   }
-  return socket
-}
 
-export function disconnectSocket() {
-  if (socket) {
-    socket.disconnect()
-    socket = null
-  }
+  return socket;
 }

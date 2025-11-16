@@ -2,7 +2,6 @@
 import type React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { SocketProvider } from "@/components/socket-provider";
 import MusicButton from "@/components/music-button";
 import "./globals.css";
@@ -39,7 +38,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SocketProvider>{children}</SocketProvider>
 
         <MusicButton />
-        <Analytics />
       </body>
     </html>
   );
