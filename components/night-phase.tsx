@@ -221,50 +221,34 @@ export default function NightPhase({
                 </p>
               </div>
 
-              {/* Only check heals if saving themselves */}
-              {isSavingSelf && healerUsesLeft === 0 ? (
-                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
-                  <p className="text-red-400 font-bold text-center mb-2">
-                    ❌ No Self-Heals Remaining
-                  </p>
-                  <p className="text-gray-300 text-sm text-center">
-                    You have already used your self-heal. You will die.
-                  </p>
-                  <Button
-                    onClick={() => onHeal(null)}
-                    className="w-full mt-3 bg-gray-600 hover:bg-gray-700"
-                  >
-                    Continue
-                  </Button>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    setSelected(werewolfTarget.id);
+                    onHeal(werewolfTarget.id);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 h-12 text-lg font-bold"
+                >
+                  ✅ Save {werewolfTarget.name}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelected(null);
+                    onHeal(null);
+                  }}
+                  className="bg-gray-600 hover:bg-gray-700 h-12 text-lg font-bold"
+                >
+                  ❌ Let them die
+                </Button>
+              </div>
+              {isSavingSelf ? (
+                <p className="text-yellow-400 text-xs text-center mt-2">
+                  ⚠️ Self-heals remaining: {healerUsesLeft}/1 - After this, you cannot save yourself again.
+                </p>
               ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      onClick={() => {
-                        setSelected(werewolfTarget.id);
-                        onHeal(werewolfTarget.id);
-                      }}
-                      className="bg-green-600 hover:bg-green-700 h-12 text-lg font-bold"
-                    >
-                      ✅ Save {werewolfTarget.name}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setSelected(null);
-                        onHeal(null);
-                      }}
-                      className="bg-gray-600 hover:bg-gray-700 h-12 text-lg font-bold"
-                    >
-                      ❌ Let them die
-                    </Button>
-                  </div>
-                  {!isSavingSelf && (
-                    <p className="text-gray-400 text-xs text-center mt-2">
-                      You have unlimited heals for other players
-                    </p>
-                  )}
-                </>
+                <p className="text-gray-400 text-xs text-center mt-2">
+                  You have unlimited heals for other players
+                </p>
               )}
             </>
           ) : (

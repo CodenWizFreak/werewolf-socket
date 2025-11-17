@@ -137,81 +137,93 @@ function handleNightPhaseEnd(io: Server, roomId: string) {
 }
 
 function startHealerPhase(io: Server, roomId: string) {
-  const room = rooms[roomId]
-  if (!room || !room.werewolfKilledId) return
+  const room = rooms[roomId];
+  if (!room || !room.werewolfKilledId) return;
 
-  const killedPlayer = room.players[room.werewolfKilledId]
-  console.log(`[HEALER PHASE] Starting 30 second healer phase for target: ${killedPlayer.name}`)
+  const killedPlayer = room.players[room.werewolfKilledId];
+  console.log(
+    `[HEALER PHASE] Starting healer phase check for target: ${killedPlayer.name}`
+  );
 
   // Special case: If killed player is healer with 0 uses left, they die instantly
   if (killedPlayer.role === "healer") {
-    const healerUsesLeft = room.healerUsesLeft[killedPlayer.id] || 2
+    const healerUsesLeft = room.healerUsesLeft[killedPlayer.id] || 0;
     if (healerUsesLeft === 0) {
-      console.log(`[INSTANT DEATH] ${killedPlayer.name} (healer with no heals) died instantly`)
-      killedPlayer.alive = false
-      io.to(roomId).emit("player-killed", { 
+      console.log(
+        `[INSTANT DEATH] ${killedPlayer.name} (healer with no self-heals) died instantly`
+      );
+      killedPlayer.alive = false;
+      io.to(roomId).emit("player-killed", {
         playerId: killedPlayer.id,
-        playerName: killedPlayer.name 
-      })
-      room.werewolfKilledId = undefined
-      
-      const winner = checkWinCondition(room)
+        playerName: killedPlayer.name,
+      });
+      room.werewolfKilledId = undefined;
+
+      const winner = checkWinCondition(room);
       if (winner) {
-        room.phase = "ended"
-        io.to(roomId).emit("game-end", { winner, round: room.round })
-        return
+        room.phase = "ended";
+        io.to(roomId).emit("game-end", { winner, round: room.round });
+        return;
       }
-      
-      advanceToDiscussion(io, roomId)
-      return
+
+      advanceToDiscussion(io, roomId);
+      return;
     }
   }
 
   // Clear any existing timer
   if (room.timerInterval) {
-    clearInterval(room.timerInterval)
-    room.timerInterval = undefined
+    clearInterval(room.timerInterval);
+    room.timerInterval = undefined;
   }
 
-  room.phaseStartTime = Date.now()
-  room.phaseDuration = 30000
+  room.phaseStartTime = Date.now();
+  room.phaseDuration = 30000;
+  room.phase = "healer";
 
   // Emit healer-phase-started to all players
   io.to(roomId).emit("healer-phase-started", {
     targetId: room.werewolfKilledId,
-    targetName: killedPlayer.name
-  })
+    targetName: killedPlayer.name,
+  });
+
+  io.to(roomId).emit("phase-change", {
+    phase: room.phase,
+    round: room.round,
+  });
 
   // Notify healer about who was killed
   Object.values(room.players).forEach((player) => {
     if (player.role === "healer" && player.alive) {
-      const healerUsesLeft = room.healerUsesLeft[player.id] || 2
-      console.log(`[NOTIFYING HEALER] ${player.name} about kill: ${killedPlayer.name}, uses left: ${healerUsesLeft}`)
-      io.to(player.socketId).emit("werewolf-killed", { 
+      const healerUsesLeft = room.healerUsesLeft[player.id] || 0;
+      console.log(
+        `[NOTIFYING HEALER] ${player.name} about kill: ${killedPlayer.name}, uses left: ${healerUsesLeft}`
+      );
+      io.to(player.socketId).emit("werewolf-killed", {
         targetId: room.werewolfKilledId,
         targetName: killedPlayer.name,
-        usesLeft: healerUsesLeft
-      })
+        usesLeft: healerUsesLeft,
+      });
     }
-  })
+  });
 
   // Start healer phase timer
   room.timerInterval = setInterval(() => {
-    const elapsed = Date.now() - room.phaseStartTime
-    const remaining = Math.max(0, room.phaseDuration - elapsed)
-    
+    const elapsed = Date.now() - room.phaseStartTime;
+    const remaining = Math.max(0, room.phaseDuration - elapsed);
+
     io.to(roomId).emit("timer-update", {
       phase: "healer",
       remaining: remaining,
-    })
+    });
 
     if (elapsed >= room.phaseDuration) {
-      clearInterval(room.timerInterval!)
-      room.timerInterval = undefined
-      console.log("[HEALER TIMEOUT] Healer didn't act in time, applying kill")
-      applyNightKillAndAdvance(io, roomId)
+      clearInterval(room.timerInterval!);
+      room.timerInterval = undefined;
+      console.log("[HEALER TIMEOUT] Healer didn't act in time, applying kill");
+      applyNightKillAndAdvance(io, roomId);
     }
-  }, 100)
+  }, 100);
 }
 
 function applyNightKillAndAdvance(io: Server, roomId: string) {
@@ -548,42 +560,58 @@ export function initSocket(server: any) {
     })
 
     socket.on("healer-heal", (targetId: string) => {
-      if (!io) return
-      const roomId = playerRoomMap[socket.id]
-      const room = rooms[roomId]
-      if (!room) return
-      
+      if (!io) return;
+      const roomId = playerRoomMap[socket.id];
+      const room = rooms[roomId];
+      if (!room) return;
+
       const healerId = Object.keys(room.players).find(
         (id) => room.players[id].socketId === socket.id
-      )
-      
-      if (!healerId || room.players[healerId].role !== "healer" || !room.players[healerId].alive) {
-        console.log("[HEAL REJECTED] Not a healer or not alive")
-        return
+      );
+
+      if (
+        !healerId ||
+        room.players[healerId].role !== "healer" ||
+        !room.players[healerId].alive
+      ) {
+        console.log("[HEAL REJECTED] Not a healer or not alive");
+        return;
       }
+
+      console.log(
+        `[HEALER HEAL] ${room.players[healerId].name} healing: ${room.players[targetId]?.name}`
+      );
+
+      // Check if healer is saving themselves
+      const isSavingSelf = targetId === healerId;
       
-      console.log(`[HEALER HEAL] ${room.players[healerId].name} healing: ${room.players[targetId]?.name}`)
-      
+      if (isSavingSelf) {
+        // Decrement self-heal counter
+        room.healerUsesLeft[healerId] = (room.healerUsesLeft[healerId] || 0) - 1;
+        console.log(
+          `[HEALER SELF-SAVE] Healer used their self-heal. Remaining: ${room.healerUsesLeft[healerId]}`
+        );
+      } else {
+        console.log(
+          `[HEALER OTHER-SAVE] Healer saved someone else (unlimited)`
+        );
+      }
+
       if (targetId === room.werewolfKilledId) {
-        room.werewolfKilledId = undefined
-        console.log(`[HEAL SUCCESS] Save successful!`)
-        io.to(roomId).emit("player-saved", { 
+        room.werewolfKilledId = undefined;
+        console.log(`[HEAL SUCCESS] Save successful!`);
+        io.to(roomId).emit("player-saved", {
           playerId: targetId,
-          playerName: room.players[targetId].name
-        })
+          playerName: room.players[targetId].name,
+        });
       }
-      
-      if (targetId === healerId) {
-        room.healerUsesLeft[healerId]--
-        console.log(`[HEALER SELF-SAVE] Healer used a life. Remaining: ${room.healerUsesLeft[healerId]}`)
-      }
-      
-      io.to(socket.id).emit("heal-confirmed", { 
-        usesLeft: room.healerUsesLeft[healerId] 
-      })
-      
-      applyNightKillAndAdvance(io, roomId)
-    })
+
+      io.to(socket.id).emit("heal-confirmed", {
+        usesLeft: room.healerUsesLeft[healerId] || 0,
+      });
+
+      applyNightKillAndAdvance(io, roomId);
+    });
 
     socket.on("healer-no-heal", () => {
       if (!io) return
